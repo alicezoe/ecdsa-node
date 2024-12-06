@@ -1,5 +1,8 @@
 import server from "./server";
 
+import * as secp from 'ethereum-cryptography/secp256k1';
+import { toHex } from 'ethereum-cryptography/utils';
+
 function Wallet({ address, setAddress, balance, setBalance }) {
   async function onChange(evt) {
     const address = evt.target.value;
