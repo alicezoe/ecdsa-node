@@ -2,8 +2,8 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const port = 3042;
-import * as secp from "ethereum-cryptography/secp256k1";
-import { toHex } from "ethereum-cryptography/utils";
+const secp = require('ethereum-cryptography/secp256k1');
+const { toHex } = require('ethereum-cryptography/utils');
 
 app.use(cors());
 app.use(express.json());
@@ -12,6 +12,7 @@ const balances = {
   "0x1": 100,
   "0x2": 50,
   "0x3": 75,
+  "0486afd3c48501dc20a30b672e1d96baf018ea361ae580ae7e9cda7aa8d3b31c6c1a62f2fa7ba0802b6c913c9c93c6410100665529ddcf18eb992d8f05d8ec02c9": 100
 };
 
 app.get("/balance/:address", (req, res) => {
@@ -21,16 +22,16 @@ app.get("/balance/:address", (req, res) => {
 });
 
 app.post("/send", (req, res) => {
-  // Get signature, recovery bit, and message hash from the client
-  const { sender, recipient, amount, signature, recoveryBit, messageHash } = req.body;
+  const { sender, recipient, amount, signature, messageHash } = req.body;
 
   try {
-    // Recover the public key from the signature
-    const publicKey = secp.recoverPublicKey(messageHash, signature, recoveryBit);
-    const address = toHex(publicKey);
+    const sig = new Uint8Array(signature);
+    const hash = new Uint8Array(messageHash);
+    
+    // Verify the signature
+    const isValid = secp.verify(sig, hash, sender);
 
-    // Verify that the recovered address matches the sender
-    if (address !== sender) {
+    if (!isValid) {
       res.status(400).send({ message: "Invalid signature!" });
       return;
     }

@@ -1,8 +1,8 @@
 import { useState } from "react";
 import server from "./server";
-import { keccak256 } from "ethereum-cryptography/keccak";
-import { utf8ToBytes } from "ethereum-cryptography/utils";
 import * as secp from "ethereum-cryptography/secp256k1";
+import { keccak256 } from "ethereum-cryptography/keccak";
+import { utf8ToBytes, toHex, hexToBytes } from "ethereum-cryptography/utils";
 
 function Transfer({ address, setBalance, privateKey }) {
   const [sendAmount, setSendAmount] = useState("");
@@ -22,10 +22,15 @@ function Transfer({ address, setBalance, privateKey }) {
         amount: amount,
         recipient: recipient,
       });
-      const messageHash = keccak256(utf8ToBytes(message));
+      
+      const messageBytes = utf8ToBytes(message);
+      const messageHash = keccak256(messageBytes);
+      
+      // Convert private key from hex to bytes
+      const privateKeyBytes = hexToBytes(privateKey);
       
       // Sign the message
-      const [signature, recoveryBit] = await secp.sign(messageHash, privateKey, {
+      const [signature, recoveryBit] = await secp.sign(messageHash, privateKeyBytes, {
         recovered: true
       });
 
@@ -35,15 +40,17 @@ function Transfer({ address, setBalance, privateKey }) {
         sender: address,
         amount: amount,
         recipient,
-        signature: Array.from(signature), // Convert Uint8Array to regular array
+        signature: Array.from(signature),
         recoveryBit,
         messageHash: Array.from(messageHash),
       });
       
       setBalance(balance);
+      setSendAmount("");
+      setRecipient("");
     } catch (ex) {
       console.error(ex);
-      alert(ex.response.data.message);
+      alert(ex.message || "Error processing transaction");
     }
   }
 
